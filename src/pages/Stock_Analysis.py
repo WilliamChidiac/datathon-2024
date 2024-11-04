@@ -11,7 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 import boto3
-from scripts.web_search.companyChatbot import companyChatbot
+from scripts import ChatBot
 import time
 import concurrent.futures
 
@@ -44,13 +44,14 @@ def get_executor():
 def set_ticker_system_instructs(ticker_input):
     insights = TickerInsights(ticker_input) # Have to redefine the object here to avoid pickling issues
     info = insights.get_summary()
-    obj = companyChatbot(
+    obj = ChatBot(
         company_ticker=ticker_input,
         company_name=info.get('longName', 'N/A'),
         industry_name=info.get('sector', 'N/A'),
         sub_sector_name=info.get('industry', 'N/A'),
         country=info.get('country', 'N/A'),
         company_description=info.get('longBusinessSummary', 'N/A'),
+        board_members=info.get('companyOfficers', []),
         variables=None,
         search_selection=None, # Auto select all search features
     )
@@ -99,7 +100,7 @@ class StockDashboard:
 
     def get_ticker_system_instructs(self):
         info = self.insights.get_summary()
-        obj = companyChatbot(
+        obj = ChatBot(
             company_ticker=self.ticker_input,
             company_name=info.get('longName', 'N/A'),
             industry_name=info.get('sector', 'N/A'),

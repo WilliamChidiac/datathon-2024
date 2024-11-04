@@ -90,12 +90,20 @@ class companyWebSearch():
         context = self.search_context(query)
         return context
 
+    def get_board_member_info(self, member_name, company_name):
+        """
+        Get information on a board member.
+        """
+        query = f"Who is {member_name} and how are they related to {company_name}? Is he invested in other sectors or company?"
+        context = self.search_context(query)
+        return context
+
     def get_company_search_results(self, 
                                    company_name, 
                                    necessary_keys,
                                    industry_name,
                                    sub_sector_name,
-                                   country):
+                                   country, members):
         """
         Performs multiple pre-defined searches to get a comprehensive overview of a company.
         """
@@ -130,6 +138,12 @@ class companyWebSearch():
         # Get world economy information
         world_economy_info = self.get_world_economy_info() if necessary_keys['world_economy'] else None
 
+        # Get board member information
+        board_info = {}
+        for member in members:
+            board_info[member['name']] = self.get_board_member_info(member['name'], company_name)
+            
+
         self.company_search_results = {
             'innovation': company_innovation,
             'quarterly_outlook': company_financials,
@@ -140,6 +154,7 @@ class companyWebSearch():
             'sub_sector': sub_sector_info,
             'geolocation': geolocation_info,
             'world_economy': world_economy_info,
+            'board_members': board_info
         }
         return self.company_search_results
 
@@ -151,6 +166,7 @@ class initialLLMContext(companyWebSearch):
                  sub_sector_name,
                  country,
                  company_description,
+                 board_members,
                  vars: dict,
                  search_selection: dict):
         """
@@ -192,6 +208,7 @@ class initialLLMContext(companyWebSearch):
         self.country = country
         self.vars = vars
         self.search_selection = search_selection
+        self.board_members = board_members
 
     def build_context(self,
                       search_results):
@@ -207,6 +224,10 @@ class initialLLMContext(companyWebSearch):
 
         # Add in the selected search categories
         for key, value in search_results.items():
+            if type(value) == dict:
+                context += f"### {key.capitalize()}\n"
+                for sub_key, sub_value in value.items():
+                    context += f"#### {sub_key.capitalize()}\n{sub_value}\n"
             if value is not None:
                 context += f"### {key.capitalize()}\n{value}\n"
 
@@ -227,7 +248,8 @@ class initialLLMContext(companyWebSearch):
             self.search_selection,
             self.industry_name,
             self.sub_sector_name,
-            self.country
+            self.country,
+            self.board_members
             )
         context = self.build_context(search_results)
         return context
