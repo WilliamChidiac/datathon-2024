@@ -94,7 +94,9 @@ class companyChatbot(initialLLMContext):
         You are a helpful financial assistant that provides financial analysts with pertinent information that can help them in their analyses.\n
         User's will ask you questions, you should use the information below to enhance your response.\n
         Make sure to think analytically about the specified company's financial performance and future outlook.\n
-        Think step by step.\n
+        In order to start off this conversation I'd like you to provide a very high level overview of the company below using this additional information.\n
+        This is meant to provide a high level overview of the company and its financial performance, this is meant for the financial analyst to get a good idea of what they are dealing with.\n
+        Keep your answer concise and to the point.\n 
         """
         self.system_instructs += self.instruct_overview
 
