@@ -55,6 +55,7 @@ def set_ticker_system_instructs(ticker_input):
         search_selection=None, # Auto select all search features
     )
     obj.build_instructions()
+    print("Finished building system instructions")
     return obj.system_instructs
 
 class StockDashboard:
@@ -75,13 +76,15 @@ class StockDashboard:
             st.session_state.messages = []
         if "futures" not in st.session_state:
             st.session_state.futures = {}
+        if "instructs_loading" not in st.session_state:
+            st.session_state.instructs_loading = dict()
 
-        # Check if the ticker_input is new and start the background thread
-        if self.ticker_input not in st.session_state['ticker_system_instructs']:
+        # Check if the ticker_input is new and not being processed, then start a new background thread
+        if (self.ticker_input not in st.session_state['ticker_system_instructs']) and (self.ticker_input not in st.session_state.instructs_loading):
             print(f"Starting background thread for {self.ticker_input}")
+            st.session_state.instructs_loading[self.ticker_input] = True
             future = get_executor().submit(set_ticker_system_instructs, self.ticker_input)
             st.session_state.futures[self.ticker_input] = future
-
         
     def display_summary(self):
         info = self.insights.get_summary()
@@ -183,11 +186,13 @@ class StockDashboard:
             st.plotly_chart(fig, use_container_width=True)
             
     def display_chat(self):
-        chat_container = st.container()
+        if self.ticker_input not in st.session_state['ticker_system_instructs']:
+            self.wait_for_system_instructs()
 
-        if st.session_state.messages: # If messages are not empty, new chat button appears
-            if st.button("Start a New Chat"):
-                st.session_state.messages = []  # Clear the chat history
+        if st.button("Start a New Chat"):
+            st.session_state.messages = []  # Clear the chat history
+
+        chat_container = st.container()
 
         # Display chat messages
         with chat_container:
@@ -206,9 +211,6 @@ class StockDashboard:
             # Get LLM response
             with chat_container:
                 with st.chat_message("assistant"):
-                    
-                    if self.ticker_input not in st.session_state['ticker_system_instructs']:
-                        self.wait_for_system_instructs()
 
                     system_instructs = st.session_state['ticker_system_instructs'][self.ticker_input]
                     with st.spinner("Thinking..."):
@@ -244,6 +246,8 @@ class StockDashboard:
                     time.sleep(0.1)
                 if future.done():
                     st.session_state['ticker_system_instructs'][self.ticker_input] = future.result()
+                    _ = st.session_state.instructs_loading.pop(self.ticker_input)
+                    st.rerun()
                     return
                 
     def get_llm_response(self, prompt, system_instructs :str = "stock", past_responses : list = []):
@@ -286,23 +290,21 @@ class StockDashboard:
         st.title(f"Financial Dashboard - {self.ticker_input}")
         
         self.display_summary()
-        
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Description","Price History", "Recommendations", "Earnings", "Board Members", "Chat"])
-        with tab1:
-            self.display_company_info()
-        with tab2:
-            self.plot_historical_data()
-        with tab3:
-            self.plot_recommendations()
-        with tab4:
-            self.plot_earnings()
-        with tab5:
-            self.display_board_members()
-        with tab6:
-            self.display_chat()
 
-
-
+        if st.toggle("Interactive chat"):
+            self.display_chat() 
+        else:
+            tab1, tab2, tab3, tab4, tab5 = st.tabs(["Description","Price History", "Recommendations", "Earnings", "Board Members"])
+            with tab1:
+                self.display_company_info()
+            with tab2:
+                self.plot_historical_data()
+            with tab3:
+                self.plot_recommendations()
+            with tab4:
+                self.plot_earnings()
+            with tab5:
+                self.display_board_members()
 
 if __name__ == "__main__":
     dashboard = StockDashboard()
