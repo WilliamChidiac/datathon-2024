@@ -26,7 +26,7 @@ def create_animated_chart():
     
     fig.update_layout(
         template='plotly_dark',
-        showlegend=True,
+        showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         title={
@@ -37,6 +37,8 @@ def create_animated_chart():
             'yanchor': 'top',
             'font': dict(size=30, color='white')
         },
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
         height=400
     )
     
