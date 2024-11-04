@@ -5,6 +5,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 import boto3
+from web_search.companyChatbot import companyChatbot
+import time
+import concurrent.futures
 
 class TickerInsights:
     def __init__(self, ticker):
@@ -27,16 +30,47 @@ class TickerInsights:
     def get_dividends(self):
         return self.ticker_obj.dividends
     
-    
+
+MAX_WORKERS = 2
+@st.cache_resource
+def get_executor():
+    return concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS)
+
+def set_ticker_system_instructs(ticker_input):
+    insights = TickerInsights(ticker_input) # Have to redefine the object here to avoid pickling issues
+    info = insights.get_summary()
+    obj = companyChatbot(
+        company_ticker=ticker_input,
+        company_name=info.get('longName', 'N/A'),
+        industry_name=info.get('sector', 'N/A'),
+        sub_sector_name=info.get('industry', 'N/A'),
+        country=info.get('country', 'N/A'),
+        company_description=info.get('longBusinessSummary', 'N/A'),
+        variables=None,
+        search_selection=None, # Auto select all search features
+    )
+    obj.build_instructions()
+    return obj.system_instructs
     
 class FinanceDashboard:
     def __init__(self):
         st.set_page_config(page_title="Stock Dashboard", layout="wide")
         self.ticker_input = st.sidebar.text_input("Enter Ticker Symbol", "AAPL")
         self.insights = TickerInsights(self.ticker_input)
-        
+
+        st.session_state.ticker = self.ticker_input
+
+        if "ticker_system_instructs" not in st.session_state:
+            st.session_state['ticker_system_instructs'] = {}
         if "messages" not in st.session_state:
             st.session_state.messages = []
+        if "futures" not in st.session_state:
+            st.session_state.futures = {}
+
+        # Check if the ticker_input is new and start the background thread
+        if self.ticker_input not in st.session_state['ticker_system_instructs']:
+            future = get_executor().submit(set_ticker_system_instructs, self.ticker_input)
+            st.session_state.futures[self.ticker_input] = future
         
     def display_summary(self):
         info = self.insights.get_summary()
@@ -49,8 +83,24 @@ class FinanceDashboard:
         with col3:
             st.metric("52 Week High", f"${info.get('fiftyTwoWeekHigh', 'N/A')}")
 
+    def get_ticker_system_instructs(self):
+        info = self.insights.get_summary()
+        obj = companyChatbot(
+            company_ticker=self.ticker_input,
+            company_name=info.get('longName', 'N/A'),
+            industry_name=info.get('sector', 'N/A'),
+            sub_sector_name=info.get('industry', 'N/A'),
+            country=info.get('country', 'N/A'),
+            company_description=info.get('longBusinessSummary', 'N/A'),
+            variables=None,
+            search_selection=None, # Auto select all search features
+        )
+        obj.build_instructions()
+        st.session_state['ticker_system_instructs'][self.ticker_input] = obj.system_instructs
+
     def display_company_info(self):
         info = self.insights.get_summary()
+        st.markdown("Overview")
         st.write(info.get('longBusinessSummary', 'No description available'))
         
         col1, col2 = st.columns(2)
@@ -122,27 +172,69 @@ class FinanceDashboard:
             st.plotly_chart(fig, use_container_width=True)
             
     def display_chat(self):
+        chat_container = st.container()
+
+        if st.session_state.messages: # If messages are not empty, new chat button appears
+            if st.button("Start a New Chat"):
+                st.session_state.messages = []  # Clear the chat history
+
         # Display chat messages
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        with chat_container:
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
 
         # Chat input
         if prompt := st.chat_input("What would you like to know about this stock?"):
             # Add user message to chat history
             st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
+            with chat_container:
+                with st.chat_message("user"):
+                    st.markdown(prompt)
 
             # Get LLM response
-            with st.chat_message("assistant"):
-                
-                response = self.get_llm_response(prompt, st.session_state.messages)
-                
-                st.session_state.messages.append(response)
-                st.markdown(response)
+            with chat_container:
+                with st.chat_message("assistant"):
+                    
+                    if self.ticker_input not in st.session_state['ticker_system_instructs']:
+                        self.wait_for_system_instructs()
+
+                    system_instructs = st.session_state['ticker_system_instructs'][self.ticker_input]
+                    with st.spinner("Thinking..."):
+                        response = self.get_llm_response(prompt, system_instructs, st.session_state.messages)
+                    
+                    assistant_message = {'role': 'assistant', 'content': response}
+                    st.session_state.messages.append(assistant_message)
+                    st.write_stream(self.stream_data(response))
     
-    
+    def stream_data(self, data):
+        for word in data.split(" "):
+            yield word + " "
+            time.sleep(0.02)
+
+    def wait_for_system_instructs(self):
+        future = st.session_state.futures.get(self.ticker_input)
+        if not future:
+            return
+
+        stages = [
+            ("Searching the web for relevant information...", 15),
+            ("Building a profile for the target ticker...", 30),
+            ("Cleaning my room...", 45),
+            ("Formatting...", None)
+        ]
+
+        for message, max_time in stages:
+            with st.spinner(message):
+                start_time = time.time()
+                while not future.done():
+                    if max_time and (time.time() - start_time) > max_time:
+                        break
+                    time.sleep(0.1)
+                if future.done():
+                    st.session_state['ticker_system_instructs'][self.ticker_input] = future.result()
+                    return
+                
     def get_llm_response(self, prompt, system_instructs :str = "stock", past_responses : list = []):
         claude_model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
         messages = [{
@@ -182,15 +274,11 @@ class FinanceDashboard:
             print(f"Previous answer: {prev_answer}")
             print(f"Messages: {messages}")
 
-            conversation_thread = messages + [prev_answer]
-
-            return {
-                'response': prev_answer['content'],
-                'past_responses': conversation_thread
-            }
+            return resp['content'][0]['text']
 
         except Exception as e:
             print(f"Error getting response: {str(e)}")
+            return "I'm sorry, I encountered an issue while generating the answer. Please try again later."
 
     def run(self):
         st.title(f"Financial Dashboard - {self.ticker_input}")
