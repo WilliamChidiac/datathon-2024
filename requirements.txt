@@ -27,7 +27,13 @@ streamlit>=1.10.0
 
 # Web scraping (if needed)
 beautifulsoup4>=4.10.0
+scrapy>=2.11.2
+html2text>=2020.1.16
 requests>=2.26.0
 
 # Jupyter for notebooks 
 jupyterlab>=3.0.0
+
+# Dashboard
+streamlit>=1.22.0
+plotly>=5.13.0
