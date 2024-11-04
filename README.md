@@ -8,7 +8,7 @@ The **Financial Document Summarizer** is a Streamlit application that leverages 
 
 - **Document Upload**: Users can upload PDF documents for analysis.
 - **AI-Powered Summarization**: Utilizes AWS Foundation Models for generating summaries.
-- **Interactive Dashboard**: A user-friendly interface built with Streamlit & chat options.
+- **Interactive Dashboard**: A user-friendly interface leveraging various APIs and AWS agents.
 
 ## Technologies Used
 
