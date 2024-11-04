@@ -100,7 +100,8 @@ def main():
         - Company financials
         - Chat with a bot
         """)
-        st.button("Go to Stock Analysis", key="stock_btn")
+        if st.button("Go to Stock Analysis", key="stock_btn"):
+            st.switch_page("pages/Stock_Analysis.py")
 
     with col2:
         st.markdown("### 📄 Document Summarizer")
@@ -111,7 +112,8 @@ def main():
         - Risk analysis
         - Strategic recommendations
         """)
-        st.button("Go to Document Summarizer", key="doc_btn")
+        if st.button("Go to Document Summarizer", key="doc_btn"):
+            st.switch_page("pages/Document_Summarizer.py")
     
     # Footer
     st.markdown("---")

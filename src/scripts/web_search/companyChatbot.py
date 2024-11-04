@@ -1,4 +1,4 @@
-from scripts.web_search.companyWebSearch import initialLLMContext
+from .companyWebSearch import initialLLMContext
 import boto3
 import json
 
@@ -10,6 +10,7 @@ class companyChatbot(initialLLMContext):
                  sub_sector_name,
                  country,
                  company_description,
+                 board_members,
                  variables: dict,
                  search_selection: dict = None,
                  region='us-west-2'):
@@ -66,6 +67,7 @@ class companyChatbot(initialLLMContext):
                             sub_sector_name,
                             country,
                             company_description,
+                            board_members,
                             variables,
                             self.search_selection)
         
@@ -86,8 +88,8 @@ class companyChatbot(initialLLMContext):
                                     self.search_selection,
                                     self.industry_name,
                                     self.sub_sector_name,
-                                    self.country
-                                    )
+                                    self.country,
+                                    self.board_members)
         self.system_instructs = self.build_context(search_results)
         self.instruct_overview = f"""
         ## OVERVIEW:
@@ -168,6 +170,7 @@ if __name__ == "__main__":
         sub_sector_name="Internet",
         country="USA",
         company_description=None,
+        board_members={},
         variables=None,
         search_selection=search_selection,
     )
