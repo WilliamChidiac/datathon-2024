@@ -199,6 +199,11 @@ class StockDashboard:
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
+            if not st.session_state.messages:
+                with st.chat_message("assistant"):
+                    start_message = f"Hey there! I'm your personal financial analysis assistant. \n\n I've been specialized in financial analysis and have access to a lot of different types of data about this stock, including the information shown on this dashboard. \n\n Ask me any questions about this stock, its competitors, or the industry and we can start analyzing together! 🚀"
+                    st.write_stream(self.stream_data(start_message))
+                    st.session_state.messages.append({"role": "assistant", "content": start_message})
 
         # Chat input
         if prompt := st.chat_input("What would you like to know about this stock?"):
@@ -291,7 +296,17 @@ class StockDashboard:
         
         self.display_summary()
 
-        if st.toggle("Interactive chat"):
+        if st.toggle("AI Powered Interactive chat"):
+            # Add some helpful information
+            with st.expander("📌 Tips for best results"):
+                st.markdown("""
+                - Ask clear questions for better responses
+                - Ask questions about the company or its financial outlook
+                - Ask questions about competitors or industry trends
+                - Use the chat to brainstorm analysis ideas
+                - Ask questions about the data displayed on the dashboard
+                - Have fun! 🚀
+                """)
             self.display_chat() 
         else:
             tab1, tab2, tab3, tab4, tab5 = st.tabs(["Description","Price History", "Recommendations", "Earnings", "Board Members"])
