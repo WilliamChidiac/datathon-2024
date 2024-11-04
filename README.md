@@ -115,6 +115,7 @@ Key areas for future development include:
 ### Financial Analyst Chatbot
 - Debugging and re-enabling the custom web search action.
 - Adding custom actions for additional financial APIs.
+- Add user file upload and file handling
 
 Additional potential developments include a “comparison agent” to provide structured outlooks on:
 - Market dominance among specific industry competitors.
