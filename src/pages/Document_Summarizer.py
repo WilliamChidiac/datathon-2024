@@ -108,7 +108,9 @@ class DocumentSummarizer:
                 "context": relevant_docs
             })
 
-            return summary
+            formatted_summary = summary.replace(": ", "\n\n:")
+
+            return formatted_summary
         except Exception as e:
             raise Exception(f"Error generating summary: {str(e)}")
 
@@ -160,13 +162,14 @@ class DocumentAnalysisDashboard:
                     
                     # Generate summary
                     summary = self.summarizer.generate_summary(vectorstore)
-                    
+                    summary = summary.replace('\n', ' ').replace('\r', '')
+
                     # Display results
                     st.success("Document processed successfully!")
                     
                     # Display summary in a nice format
                     st.markdown("### Document Summary")
-                    st.markdown(summary)
+                    st.write(summary)
                     
                     # Add download button for summary
                     st.download_button(
