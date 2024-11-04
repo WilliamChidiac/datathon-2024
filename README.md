@@ -16,8 +16,10 @@ The **Financial Dashboard & Document Summarizer** is a Streamlit application tha
 - **Boto3**: AWS SDK for Python to interact with AWS services.
 - **LangChain**: For managing language model interactions and document processing.
 - **Chroma**: For vector storage and retrieval of documents.
-- **Amazon Bedrock**: For accessing the Titan models for summarization and embeddings.
+- **Amazon Bedrock - Foundation models**: For accessing the Titan models for summarization and embeddings.
+- **Amazon Bedrock - Agents**: In order to create a financial analysis expert who has access to real-time information.
 - **PyPDFLoader**: For loading and processing PDF documents.
+- **Tavily**: For searching up relevant real-time information about the stock
 
 # Instructions  
 
