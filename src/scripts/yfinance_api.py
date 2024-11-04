@@ -265,15 +265,6 @@ class FinanceDashboard:
             # Decode response
             resp = json.loads(response['body'].read().decode('utf-8'))
 
-            # Extract assistant response
-            prev_answer = {
-                "role": resp['role'],
-                "content": resp['content'][0]['text']
-            }
-
-            print(f"Previous answer: {prev_answer}")
-            print(f"Messages: {messages}")
-
             return resp['content'][0]['text']
 
         except Exception as e:

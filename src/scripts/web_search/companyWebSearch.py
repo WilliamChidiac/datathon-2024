@@ -30,7 +30,7 @@ class companyWebSearch():
         """
         Get the quarterly outlook of a company.
         """
-        query = "Quarterly outlook of " + company_name + " right now"
+        query = "Quarterly outlook of " + company_name + " Q3 Q4 2024"
         context = self.search_context(query)
         return context
     
@@ -62,7 +62,7 @@ class companyWebSearch():
         """
         Get industry information for a company.
         """
-        query = "Current trends in the " + industry_name + " industry today"
+        query = "Current trends in the " + industry_name + " industry" + " Q3 Q4 2024"
         context = self.search_context(query)
         return context
     
@@ -70,7 +70,7 @@ class companyWebSearch():
         """
         Get sub-sector information for a company.
         """
-        query = "Current trends in the " + sub_sector_name + " sub-sector today"
+        query = "Current trends in the " + sub_sector_name + " sub-sector" + " Q3 Q4 2024"
         context = self.search_context(query)
         return context
     
@@ -78,7 +78,7 @@ class companyWebSearch():
         """
         Get geolocation information for a company.
         """
-        query = "How is the market in " + country + " doing right now? Relevant statistics."
+        query = "How is the market in " + country + " doing right now? Relevant statistics." + " Q3 Q4 2024"
         context = self.search_context(query)
         return context
     
@@ -86,7 +86,7 @@ class companyWebSearch():
         """
         Get world economy information for a company.
         """
-        query = "How is the world economy doing right now? Relevant statistics."
+        query = "How is the world economy doing right now? Relevant statistics."  + " Q3 Q4 2024"
         context = self.search_context(query)
         return context
 

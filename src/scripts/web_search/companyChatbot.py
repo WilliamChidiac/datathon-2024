@@ -1,4 +1,4 @@
-from web_search.companyWebSearch import initialLLMContext
+from scripts.web_search.companyWebSearch import initialLLMContext
 import boto3
 import json
 
