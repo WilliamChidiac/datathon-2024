@@ -2,13 +2,13 @@
 
 ## Overview
 
-The **Financial Document Summarizer** is a Streamlit application that leverages AWS services and language models to analyze and summarize financial documents. The app allows users to upload PDF documents, processes them using AI, and generates structured summaries focusing on key financial metrics, business performance, risks, and strategic initiatives.
+The **Financial Dashboard & Document Summarizer** is a Streamlit application that leverages AWS services and language models to analyze specific stocks and summarize long and complicated financial documents. An initial dashboard allows users to see relevant information about the stock, and allows the user to interact with an AI Agent who is an expert in financial analysis. The app also allows users to upload PDF documents, processes them using AI, and generates structured summaries focusing on key financial metrics, business performance, risks, and strategic initiatives.
 
 ## Features
 
 - **Document Upload**: Users can upload PDF documents for analysis.
 - **AI-Powered Summarization**: Utilizes AWS Foundation Models for generating summaries.
-- **Interactive Dashboard**: A user-friendly interface leveraging various APIs and AWS agents.
+- **Interactive Dashboard**: A user-friendly interface leveraging various APIs and AWS agents - an interactive chat feature lets financial analysts investing stocks using all the data that's at their fingertips.
 
 ## Technologies Used
 
