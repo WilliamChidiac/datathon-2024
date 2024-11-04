@@ -18,3 +18,13 @@ The **Financial Document Summarizer** is a Streamlit application that leverages 
 - **Chroma**: For vector storage and retrieval of documents.
 - **Amazon Bedrock**: For accessing the Titan models for summarization and embeddings.
 - **PyPDFLoader**: For loading and processing PDF documents.
+
+# Instructions  
+
+Before running this code there are two things that need to be done:  
+1. Install requirements from requirements.txt
+2. Set the AWS credentials in the environment variables, any other Secrets are stored in AWS and will be accesses programmatically by the solution.
+
+Once the two steps above have been done, you can proceed to run our application locally. This is done by navigating to src/ and apply the following command in the cmd:
+`streamlit run Home.py`  
+This will run the application locally, navigate to the specified url in your browser to visualize our solution.
