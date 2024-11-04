@@ -14,6 +14,10 @@ import boto3
 from scripts.web_search.companyChatbot import companyChatbot
 import time
 import concurrent.futures
+import uuid
+
+AGENT_ALIAS_ID = "0RQRXYVCVH"
+AGENT_ID = "BWYEY0HCHS"
 
 class TickerInsights:
     def __init__(self, ticker):
@@ -72,6 +76,8 @@ class StockDashboard:
 
         if "ticker_system_instructs" not in st.session_state:
             st.session_state['ticker_system_instructs'] = {}
+        if "ticker_ai_overview" not in st.session_state:
+            st.session_state['ticker_ai_overview'] = {}
         if "messages" not in st.session_state:
             st.session_state.messages = []
         if "futures" not in st.session_state:
@@ -188,9 +194,16 @@ class StockDashboard:
     def display_chat(self):
         if self.ticker_input not in st.session_state['ticker_system_instructs']:
             self.wait_for_system_instructs()
+            self.generate_ticker_overview() # To create initial overview for user + get a bunch of info into the chatbot context
+            st.rerun() # Rerun the script to display the chat
 
         if st.button("Start a New Chat"):
+            with st.spinner("Resetting chat..."):
+                time.sleep(1)
             st.session_state.messages = []  # Clear the chat history
+            # Store unique session ID for usage throughout the chat
+            st.session_state['session_id'] = str(uuid.uuid4()) 
+            st.session_state['is_chat_reset'] = True
 
         chat_container = st.container()
 
@@ -201,8 +214,11 @@ class StockDashboard:
                     st.markdown(message["content"])
             if not st.session_state.messages:
                 with st.chat_message("assistant"):
-                    start_message = f"Hey there! I'm your personal financial analysis assistant. \n\n I've been specialized in financial analysis and have access to a lot of different types of data about this stock, including the information shown on this dashboard. \n\n Ask me any questions about this stock, its competitors, or the industry and we can start analyzing together! 🚀"
-                    st.write_stream(self.stream_data(start_message))
+                    start_message = f"Hey there! I'm your personal financial analysis assistant. \n\nI've been specialized in financial analysis and have access to a lot of different types of data about this stock, including the information shown on this dashboard. \n\nAsk me any questions about this stock, its competitors, or the industry and we can start analyzing together! 🚀\n\n\n\n**To get started, here's an overview of the ticker you're interested in:**\n\n{st.session_state['ticker_ai_overview'][self.ticker_input]}"
+                    if 'is_chat_reset' in st.session_state and st.session_state['is_chat_reset']:
+                        st.write(start_message)
+                    else:
+                        st.write_stream(self.stream_data(start_message))
                     st.session_state.messages.append({"role": "assistant", "content": start_message})
 
         # Chat input
@@ -217,9 +233,8 @@ class StockDashboard:
             with chat_container:
                 with st.chat_message("assistant"):
 
-                    system_instructs = st.session_state['ticker_system_instructs'][self.ticker_input]
                     with st.spinner("Thinking..."):
-                        response = self.get_llm_response(prompt, system_instructs, st.session_state.messages)
+                        response = self.get_llm_response(prompt)
                     
                     assistant_message = {'role': 'assistant', 'content': response}
                     st.session_state.messages.append(assistant_message)
@@ -252,40 +267,51 @@ class StockDashboard:
                 if future.done():
                     st.session_state['ticker_system_instructs'][self.ticker_input] = future.result()
                     _ = st.session_state.instructs_loading.pop(self.ticker_input)
-                    st.rerun()
                     return
                 
-    def get_llm_response(self, prompt, system_instructs :str = "stock", past_responses : list = []):
-        claude_model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-        messages = [{
-            "role": "user",
-            "content": prompt
-        }]
-        if past_responses is not None:
-            messages = past_responses + messages
+    def generate_ticker_overview(self):
+        initial_prompt = st.session_state['ticker_system_instructs'][self.ticker_input]
+        agent_client = boto3.client('bedrock-agent-runtime')
+
+        st.session_state['session_id'] = str(uuid.uuid4())
+
+        with st.spinner("Generating overview..."):
+            response = agent_client.invoke_agent(
+                agentId=AGENT_ID,
+                agentAliasId=AGENT_ALIAS_ID,
+                inputText=initial_prompt,
+                sessionId=st.session_state['session_id'],
+            )
+            # Format response for display
+            agent_answer = ''
+            for event in response['completion']:
+                if 'chunk' in list(event.keys()):
+                    agent_answer += event['chunk']['bytes'].decode('utf-8')
+
+            agent_answer = agent_answer.replace("$", "\\$") # Escape dollar signs for markdown
+            print(f"Overview generated: {agent_answer}")
+        
+            st.session_state["ticker_ai_overview"][self.ticker_input] = agent_answer
+
+    def get_llm_response(self, prompt):
         try:
             # Prepare message payload for Claude
+            agent_client = boto3.client('bedrock-agent-runtime')
 
-            body = json.dumps({
-                "anthropic_version": "bedrock-2023-05-31", 
-                "max_tokens": 1000,
-                "system": system_instructs,
-                "messages": messages,
-                "temperature": 0.8,
-            })
-            
-            bedrock = boto3.client('bedrock-runtime')
-            
-            # Invoke Claude model
-            response = bedrock.invoke_model(
-                modelId=claude_model_id,
-                body=body
+            response = agent_client.invoke_agent(
+                agentId=AGENT_ID,
+                agentAliasId=AGENT_ALIAS_ID,
+                inputText=prompt,
+                sessionId=st.session_state['session_id'],
             )
 
-            # Decode response
-            resp = json.loads(response['body'].read().decode('utf-8'))
-
-            return resp['content'][0]['text']
+            # Format response for display
+            agent_answer = ''
+            for event in response['completion']:
+                if 'chunk' in list(event.keys()):
+                    agent_answer += event['chunk']['bytes'].decode('utf-8')
+            agent_answer = agent_answer.replace("$", "\\$") # Escape dollar signs for markdown
+            return agent_answer
 
         except Exception as e:
             print(f"Error getting response: {str(e)}")

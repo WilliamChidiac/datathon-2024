@@ -164,6 +164,9 @@ class DocumentAnalysisDashboard:
                     summary = self.summarizer.generate_summary(vectorstore)
                     summary = summary.replace('\n', ' ').replace('\r', '')
 
+                    # Escape all $ signs to prevent rendering as LaTeX
+                    summary = summary.replace("$", "\\$")
+
                     # Display results
                     st.success("Document processed successfully!")
                     
