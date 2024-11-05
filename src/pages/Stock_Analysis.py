@@ -16,7 +16,7 @@ import time
 import concurrent.futures
 import uuid
 
-AGENT_ALIAS_ID = "0RQRXYVCVH"
+AGENT_ALIAS_ID = "FFI0XWNCH7"
 AGENT_ID = "BWYEY0HCHS"
 
 class TickerInsights:
